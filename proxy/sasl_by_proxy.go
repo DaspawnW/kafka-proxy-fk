@@ -71,23 +71,27 @@ type SASLAuthByProxy interface {
 // When credentials are invalid, Kafka closes the connection. This does not seem to be the ideal way
 // of responding to bad credentials but thats how its being done today.
 func (b *SASLPlainAuth) sendAndReceiveSASLAuth(conn DeadlineReaderWriter, _ string) error {
+	logrus.Debugf("Starting SASL handshake with modified mechanism %s", SASLSCRAM512)
 
 	saslHandshake := &SASLHandshake{
 		clientID:     b.clientID,
 		version:      0,
-		mechanism:    SASLPlain,
+		mechanism:    SASLSCRAM512,
 		writeTimeout: b.writeTimeout,
 		readTimeout:  b.readTimeout,
 	}
 	handshakeErr := saslHandshake.sendAndReceiveHandshake(conn)
 	if handshakeErr != nil {
+		logrus.Debugf("Handshake for %s failed with error %d", SASLSCRAM512, handshakeErr)
 		return handshakeErr
 	}
+
+	logrus.Debugf("Handshake for %s successful", SASLSCRAM512)
 	return b.sendSaslAuthenticateRequest(conn)
 }
 
 func (b *SASLPlainAuth) sendSaslAuthenticateRequest(conn DeadlineReaderWriter) error {
-	logrus.Debugf("Sending authentication opaque packets, mechanism PLAIN")
+	logrus.Debugf("Sending authentication opaque packets, mechanism %s", SASLSCRAM512)
 
 	length := 1 + len(b.username) + 1 + len(b.password)
 	authBytes := make([]byte, length+4) //4 byte length header + auth data
